@@ -1,33 +1,42 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { BlockDef, FeedbackState } from './types';
 import { GAME_DATA, CORRECT_ORDER, SCORING } from './constants';
 import { Assistant } from './components/Assistant';
 import { Palette } from './components/Palette';
 import { Canvas } from './components/Canvas';
-import { Block } from './components/Block';
 import {
   Play,
   RotateCcw,
   AlertTriangle,
   XCircle,
-  Menu,
   Timer,
   Trophy
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+/* =======================
+   SHUFFLE UTIL (OPCIÓN A)
+======================= */
+const shuffle = <T,>(array: T[]) => {
+  return [...array].sort(() => Math.random() - 0.5);
+};
+
 const App: React.FC = () => {
-  const initialBlocks = [
-    ...GAME_DATA.bloques_disponibles.correctos,
-    ...GAME_DATA.bloques_disponibles.distractores
-  ];
+  /* =======================
+     BLOCKS (DESORDENADOS)
+  ======================= */
+  const initialBlocks = useMemo(() => {
+    return shuffle([
+      ...GAME_DATA.bloques_disponibles.correctos,
+      ...GAME_DATA.bloques_disponibles.distractores
+    ]);
+  }, []);
 
   const [canvasBlocks, setCanvasBlocks] = useState<BlockDef[]>([]);
   const [feedback, setFeedback] = useState<FeedbackState>({
     type: 'neutral',
     message: GAME_DATA.mision.descripcion
   });
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [penalties, setPenalties] = useState(0);
@@ -52,7 +61,7 @@ const App: React.FC = () => {
   );
 
   /* =======================
-     DROP HANDLER (FIX CLAVE)
+     DROP HANDLER
   ======================= */
   const handleDrop = useCallback(
     (block: BlockDef, index?: number) => {
@@ -68,7 +77,7 @@ const App: React.FC = () => {
 
         next.splice(insertIndex, 0, {
           ...block,
-          id: crypto.randomUUID() // 🔴 CLAVE ABSOLUTA
+          id: crypto.randomUUID() // id único por instancia
         });
 
         return next;
@@ -155,12 +164,14 @@ const App: React.FC = () => {
             elapsedSeconds * SCORING.TIME_PENALTY -
             penalties
         );
+
         setIsFinished(true);
         setFeedback({
           type: 'success',
           message: `✅ ¡Misión Completada! Puntuación Final: ${finalScore}`,
           subMessage: GAME_DATA.feedback.exito.cliente_dice
         });
+
         confetti({
           particleCount: 150,
           spread: 70,
@@ -169,8 +180,7 @@ const App: React.FC = () => {
         return;
       } else {
         error = {
-          mensaje:
-            'El flujo no está completo o el orden no es exacto.'
+          mensaje: 'El flujo no está completo o el orden no es exacto.'
         };
       }
     }
@@ -231,8 +241,9 @@ const App: React.FC = () => {
             </div>
 
             <div className="flex gap-4 items-center">
-              <span className="font-mono text-sm">
-                <Timer size={14} /> {formatTime(elapsedSeconds)}
+              <span className="font-mono text-sm flex items-center gap-1">
+                <Timer size={14} />
+                {formatTime(elapsedSeconds)}
               </span>
 
               <button onClick={handleReset}>
@@ -242,9 +253,10 @@ const App: React.FC = () => {
               {!isFinished && (
                 <button
                   onClick={runSimulation}
-                  className="bg-blue-600 text-white px-4 py-2 rounded"
+                  className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-1"
                 >
-                  <Play size={14} /> Ejecutar
+                  <Play size={14} />
+                  Ejecutar
                 </button>
               )}
             </div>
