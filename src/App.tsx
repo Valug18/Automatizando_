@@ -228,7 +228,7 @@ const App: React.FC = () => {
   ======================= */
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-slate-100">
-      <div className="flex flex-1 overflow-hidden relative">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden relative">
         <Assistant />
 
         <div className="flex-1 flex flex-col min-w-0">
