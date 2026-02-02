@@ -49,7 +49,7 @@ export const Canvas: React.FC<CanvasProps> = ({ blocks, onDrop, onRemove }) => {
         }}
       />
 
-      <div className="relative z-10 flex-1 overflow-y-auto p-8">
+     <div className="relative z-10 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-md mx-auto min-h-[400px] flex flex-col pb-32 px-2">
           
           {/* Start Indicator */}
