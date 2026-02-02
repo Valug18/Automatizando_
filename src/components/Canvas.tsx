@@ -50,7 +50,7 @@ export const Canvas: React.FC<CanvasProps> = ({ blocks, onDrop, onRemove }) => {
       />
 
       <div className="relative z-10 flex-1 overflow-y-auto p-8">
-        <div className="max-w-md mx-auto min-h-[500px] flex flex-col pb-20">
+        <div className="w-full max-w-md mx-auto min-h-[400px] flex flex-col pb-32 px-2">
           
           {/* Start Indicator */}
           <div className="flex justify-center mb-4 opacity-50">
