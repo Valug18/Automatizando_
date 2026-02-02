@@ -22,14 +22,24 @@ export const Palette: React.FC<PaletteProps> = ({ availableBlocks }) => {
         </p>
         
         {availableBlocks.map(block => (
-          <Block 
-            key={block.id}
-            block={block}
-            color={GAME_DATA.interfaz_usuario.colores_por_tipo[block.tipo]}
-            compact={true}
-          />
-        ))}
-
+  <div
+    key={block.id}
+    draggable
+    onDragStart={(e) => {
+      e.dataTransfer.setData(
+        'application/json',
+        JSON.stringify(block)
+      );
+      e.dataTransfer.effectAllowed = 'move';
+    }}
+  >
+    <Block 
+      block={block}
+      color={GAME_DATA.interfaz_usuario.colores_por_tipo[block.tipo]}
+      compact={true}
+    />
+  </div>
+))}
         <div className="mt-8 pt-6 border-t border-slate-100">
            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-3 px-1">Leyenda</p>
            <div className="grid grid-cols-2 gap-2">
