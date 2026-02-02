@@ -241,15 +241,19 @@ const App: React.FC = () => {
             </div>
 
             <div className="flex gap-4 items-center">
-              <span className="font-mono text-sm flex items-center gap-1">
-                <Timer size={14} />
-                {formatTime(elapsedSeconds)}
-              </span>
+  <span className="font-mono text-sm flex items-center gap-1">
+    <Trophy size={14} className="text-yellow-500" />
+    {currentScore} pts
+  </span>
 
-              <button onClick={handleReset}>
-                <RotateCcw size={18} />
-              </button>
+  <span className="font-mono text-sm flex items-center gap-1">
+    <Timer size={14} />
+    {formatTime(elapsedSeconds)}
+  </span>
 
+  <button onClick={handleReset}>
+    <RotateCcw size={18} />
+  </button>
               {!isFinished && (
                 <button
                   onClick={runSimulation}
