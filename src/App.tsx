@@ -9,6 +9,7 @@ import { GAME_DATA, CORRECT_ORDER, SCORING } from './constants';
 import { Assistant } from './components/Assistant';
 import { Palette } from './components/Palette';
 import { Canvas } from './components/Canvas';
+import { Block } from './components/Block';
 import {
   Play,
   RotateCcw,
@@ -20,15 +21,14 @@ import {
 import confetti from 'canvas-confetti';
 
 /* =======================
-   SHUFFLE UTIL (OPCIÓN A)
+   UTIL: SHUFFLE BLOQUES
 ======================= */
-const shuffle = <T,>(array: T[]) => {
-  return [...array].sort(() => Math.random() - 0.5);
-};
+const shuffle = <T,>(array: T[]) =>
+  [...array].sort(() => Math.random() - 0.5);
 
 const App: React.FC = () => {
   /* =======================
-     BLOCKS (DESORDENADOS)
+     BLOQUES DESORDENADOS
   ======================= */
   const initialBlocks = useMemo(() => {
     return shuffle([
@@ -52,9 +52,10 @@ const App: React.FC = () => {
   ======================= */
   useEffect(() => {
     if (isFinished) return;
-    const interval = window.setInterval(() => {
-      setElapsedSeconds(prev => prev + 1);
-    }, 1000);
+    const interval = window.setInterval(
+      () => setElapsedSeconds(prev => prev + 1),
+      1000
+    );
     return () => clearInterval(interval);
   }, [isFinished]);
 
@@ -66,7 +67,7 @@ const App: React.FC = () => {
   );
 
   /* =======================
-     DROP HANDLER (SAFE)
+     DROP / ADD BLOCK
   ======================= */
   const handleDrop = useCallback(
     (block: BlockDef, index?: number) => {
@@ -74,16 +75,14 @@ const App: React.FC = () => {
 
       setCanvasBlocks(prev => {
         const next = [...prev];
-
         const insertIndex =
-          index !== undefined && index !== null
+          index !== undefined
             ? Math.min(index, next.length)
             : next.length;
 
         next.splice(insertIndex, 0, {
           ...block,
-          // ⚠️ NO crypto.randomUUID → rompe CI
-          id: `${block.id}-${Date.now()}-${Math.random()}`
+          id: crypto.randomUUID()
         });
 
         return next;
@@ -93,7 +92,7 @@ const App: React.FC = () => {
         setPenalties(p => p + SCORING.DISTRACTOR_PENALTY);
         setFeedback({
           type: 'error',
-          message: `⚠️ Bloque incorrecto detectado. -${SCORING.DISTRACTOR_PENALTY} pts`
+          message: `⚠️ Bloque incorrecto. -${SCORING.DISTRACTOR_PENALTY} pts`
         });
       } else {
         setFeedback({
@@ -119,13 +118,13 @@ const App: React.FC = () => {
 
   const handleReset = () => {
     setCanvasBlocks([]);
+    setElapsedSeconds(0);
+    setPenalties(0);
+    setIsFinished(false);
     setFeedback({
       type: 'neutral',
       message: 'Lienzo limpio. ¡Empieza de nuevo!'
     });
-    setElapsedSeconds(0);
-    setPenalties(0);
-    setIsFinished(false);
   };
 
   /* =======================
@@ -137,34 +136,27 @@ const App: React.FC = () => {
     if (canvasBlocks.length === 0) {
       setFeedback({
         type: 'error',
-        message: 'El flujo está vacío. Arrastra bloques para empezar.'
+        message: 'El flujo está vacío.'
       });
       return;
     }
 
     let error:
-      | { condicion?: string; mensaje: string }
+      | { mensaje: string }
       | undefined;
 
     if (canvasBlocks[0].nombre !== 'Disparador') {
-      error =
-        GAME_DATA.feedback.errores.find(
-          e => e.condicion === 'inicio_incorrecto'
-        ) || { mensaje: 'Error de inicio' };
+      error = { mensaje: 'El flujo no inicia con un Disparador.' };
     }
 
     if (!error && canvasBlocks.some(b => b.tipo === 'Distractor')) {
-      error =
-        GAME_DATA.feedback.errores.find(
-          e => e.condicion === 'uso_distractor'
-        ) || { mensaje: 'Bloque innecesario detectado' };
+      error = { mensaje: 'Hay bloques innecesarios en el flujo.' };
     }
 
     if (!error) {
-      const currentOrderNames = canvasBlocks.map(b => b.nombre);
+      const names = canvasBlocks.map(b => b.nombre);
       const isCorrect =
-        JSON.stringify(currentOrderNames) ===
-        JSON.stringify(CORRECT_ORDER);
+        JSON.stringify(names) === JSON.stringify(CORRECT_ORDER);
 
       if (isCorrect) {
         const finalScore = Math.max(
@@ -177,7 +169,7 @@ const App: React.FC = () => {
         setIsFinished(true);
         setFeedback({
           type: 'success',
-          message: `✅ ¡Misión Completada! Puntuación Final: ${finalScore}`,
+          message: `✅ ¡Misión completada! Puntuación: ${finalScore}`,
           subMessage: GAME_DATA.feedback.exito.cliente_dice
         });
 
@@ -188,10 +180,7 @@ const App: React.FC = () => {
         });
         return;
       } else {
-        error = {
-          mensaje:
-            'El flujo no está completo o el orden no es exacto.'
-        };
+        error = { mensaje: 'El orden no es correcto.' };
       }
     }
 
@@ -205,17 +194,6 @@ const App: React.FC = () => {
   /* =======================
      UI HELPERS
   ======================= */
-  const getFeedbackStyles = () => {
-    switch (feedback.type) {
-      case 'success':
-        return 'bg-green-50 border-green-200 text-green-800';
-      case 'error':
-        return 'bg-red-50 border-red-200 text-red-800';
-      default:
-        return 'bg-white border-slate-200 text-slate-600';
-    }
-  };
-
   const getFeedbackIcon = () => {
     switch (feedback.type) {
       case 'success':
@@ -228,43 +206,36 @@ const App: React.FC = () => {
   };
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
   /* =======================
      RENDER
   ======================= */
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-slate-100">
-      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden relative">
-        {/* Assistant SOLO DESKTOP */}
+    <div className="flex flex-col h-screen bg-slate-100 pb-28">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+        {/* Assistant solo desktop */}
         <div className="hidden lg:block">
           <Assistant />
         </div>
 
+        {/* Canvas */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* HEADER / FEEDBACK */}
-          <div
-            className={`p-4 border-b shadow-sm flex flex-wrap justify-between gap-2 ${getFeedbackStyles()}`}
-          >
-            <div className="flex gap-2 items-start max-w-full">
+          <div className="p-4 border-b bg-white shadow-sm flex justify-between items-center">
+            <div className="flex items-start gap-2">
               {getFeedbackIcon()}
-              <p className="text-sm sm:text-base leading-snug">
-                {feedback.message}
-              </p>
+              <p className="text-sm">{feedback.message}</p>
             </div>
 
-            <div className="flex gap-3 items-center">
-              <span className="font-mono text-sm flex items-center gap-1">
-                <Trophy size={14} className="text-yellow-500" />
-                {currentScore} pts
+            <div className="flex items-center gap-3 text-sm font-mono">
+              <span className="flex items-center gap-1">
+                <Trophy size={14} /> {currentScore}
               </span>
-
-              <span className="font-mono text-sm flex items-center gap-1">
-                <Timer size={14} />
-                {formatTime(elapsedSeconds)}
+              <span className="flex items-center gap-1">
+                <Timer size={14} /> {formatTime(elapsedSeconds)}
               </span>
 
               <button onClick={handleReset}>
@@ -274,26 +245,14 @@ const App: React.FC = () => {
               {!isFinished && (
                 <button
                   onClick={runSimulation}
-                  className="bg-blue-600 text-white px-3 py-2 rounded flex items-center gap-1"
+                  className="bg-blue-600 text-white px-3 py-1.5 rounded flex items-center gap-1"
                 >
-                  <Play size={14} />
-                  Ejecutar
+                  <Play size={14} /> Ejecutar
                 </button>
               )}
             </div>
           </div>
 
-          {/* MISIÓN MOBILE */}
-          <div className="lg:hidden p-3 bg-white border-b border-slate-200 text-sm">
-            <p className="font-medium">
-              {GAME_DATA.mision.titulo}
-            </p>
-            <p className="text-slate-600 mt-1">
-              {GAME_DATA.mision.descripcion}
-            </p>
-          </div>
-
-          {/* CANVAS */}
           <Canvas
             blocks={canvasBlocks}
             onDrop={handleDrop}
@@ -302,9 +261,32 @@ const App: React.FC = () => {
           />
         </div>
 
-        {/* PALETTE SOLO DESKTOP */}
+        {/* Palette desktop */}
         <div className="hidden lg:block">
           <Palette availableBlocks={initialBlocks} />
+        </div>
+      </div>
+
+      {/* =======================
+          PALETTE MOBILE
+      ======================= */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50">
+        <div className="flex gap-3 overflow-x-auto p-3">
+          {initialBlocks.map(block => (
+            <div
+              key={block.id}
+              className="min-w-[160px]"
+              onClick={() => handleDrop(block)}
+            >
+              <Block
+                block={block}
+                color={
+                  GAME_DATA.interfaz_usuario.colores_por_tipo[block.tipo]
+                }
+                compact
+              />
+            </div>
+          ))}
         </div>
       </div>
     </div>
