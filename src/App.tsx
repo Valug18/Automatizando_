@@ -1,4 +1,9 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useMemo
+} from 'react';
 import { BlockDef, FeedbackState } from './types';
 import { GAME_DATA, CORRECT_ORDER, SCORING } from './constants';
 import { Assistant } from './components/Assistant';
@@ -61,7 +66,7 @@ const App: React.FC = () => {
   );
 
   /* =======================
-     DROP HANDLER
+     DROP HANDLER (SAFE)
   ======================= */
   const handleDrop = useCallback(
     (block: BlockDef, index?: number) => {
@@ -77,7 +82,8 @@ const App: React.FC = () => {
 
         next.splice(insertIndex, 0, {
           ...block,
-          id: crypto.randomUUID() // id único por instancia
+          // ⚠️ NO crypto.randomUUID → rompe CI
+          id: `${block.id}-${Date.now()}-${Math.random()}`
         });
 
         return next;
@@ -103,7 +109,10 @@ const App: React.FC = () => {
     (id: string) => {
       if (isFinished) return;
       setCanvasBlocks(prev => prev.filter(b => b.id !== id));
-      setFeedback({ type: 'neutral', message: 'Bloque eliminado.' });
+      setFeedback({
+        type: 'neutral',
+        message: 'Bloque eliminado.'
+      });
     },
     [isFinished]
   );
@@ -180,7 +189,8 @@ const App: React.FC = () => {
         return;
       } else {
         error = {
-          mensaje: 'El flujo no está completo o el orden no es exacto.'
+          mensaje:
+            'El flujo no está completo o el orden no es exacto.'
         };
       }
     }
@@ -229,37 +239,42 @@ const App: React.FC = () => {
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-slate-100">
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden relative">
+        {/* Assistant SOLO DESKTOP */}
         <div className="hidden lg:block">
-  <Assistant />
-</div>
+          <Assistant />
+        </div>
 
         <div className="flex-1 flex flex-col min-w-0">
+          {/* HEADER / FEEDBACK */}
           <div
-            className={`p-4 border-b shadow-sm flex justify-between ${getFeedbackStyles()}`}
+            className={`p-4 border-b shadow-sm flex flex-wrap justify-between gap-2 ${getFeedbackStyles()}`}
           >
-            <div className="flex gap-2 items-start">
+            <div className="flex gap-2 items-start max-w-full">
               {getFeedbackIcon()}
-              <p>{feedback.message}</p>
+              <p className="text-sm sm:text-base leading-snug">
+                {feedback.message}
+              </p>
             </div>
 
-            <div className="flex gap-4 items-center">
-  <span className="font-mono text-sm flex items-center gap-1">
-    <Trophy size={14} className="text-yellow-500" />
-    {currentScore} pts
-  </span>
+            <div className="flex gap-3 items-center">
+              <span className="font-mono text-sm flex items-center gap-1">
+                <Trophy size={14} className="text-yellow-500" />
+                {currentScore} pts
+              </span>
 
-  <span className="font-mono text-sm flex items-center gap-1">
-    <Timer size={14} />
-    {formatTime(elapsedSeconds)}
-  </span>
+              <span className="font-mono text-sm flex items-center gap-1">
+                <Timer size={14} />
+                {formatTime(elapsedSeconds)}
+              </span>
 
-  <button onClick={handleReset}>
-    <RotateCcw size={18} />
-  </button>
+              <button onClick={handleReset}>
+                <RotateCcw size={18} />
+              </button>
+
               {!isFinished && (
                 <button
                   onClick={runSimulation}
-                  className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-1"
+                  className="bg-blue-600 text-white px-3 py-2 rounded flex items-center gap-1"
                 >
                   <Play size={14} />
                   Ejecutar
@@ -268,6 +283,17 @@ const App: React.FC = () => {
             </div>
           </div>
 
+          {/* MISIÓN MOBILE */}
+          <div className="lg:hidden p-3 bg-white border-b border-slate-200 text-sm">
+            <p className="font-medium">
+              {GAME_DATA.mision.titulo}
+            </p>
+            <p className="text-slate-600 mt-1">
+              {GAME_DATA.mision.descripcion}
+            </p>
+          </div>
+
+          {/* CANVAS */}
           <Canvas
             blocks={canvasBlocks}
             onDrop={handleDrop}
@@ -276,9 +302,10 @@ const App: React.FC = () => {
           />
         </div>
 
+        {/* PALETTE SOLO DESKTOP */}
         <div className="hidden lg:block">
-  <Palette availableBlocks={initialBlocks} />
-</div>
+          <Palette availableBlocks={initialBlocks} />
+        </div>
       </div>
     </div>
   );
