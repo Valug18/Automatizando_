@@ -274,7 +274,9 @@ const App: React.FC = () => {
           />
         </div>
 
-        <Palette availableBlocks={initialBlocks} />
+        <div className="hidden lg:block">
+  <Palette availableBlocks={initialBlocks} />
+</div>
       </div>
     </div>
   );
